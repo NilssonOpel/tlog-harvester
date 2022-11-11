@@ -25,7 +25,7 @@ Examples:
 """
 
 #-------------------------------------------------------------------------------
-def parse_arguments():
+def get_my_arg_parser():
     parser = argparse.ArgumentParser(_my_name,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(DESCRIPTION),
@@ -44,7 +44,7 @@ def parse_arguments():
     add('-d', '--directory', metavar='SEARCH-DIR',
         default=os.getcwd(),
         help='search dir')
-    add('-f', '--filter', metavar='SEARCH-DIR',
+    add('-f', '--filter', metavar='FILTER',
         help='filter on globbed files, e.g. Release or Debug')
     add('-p', '--pattern', metavar='FILE-PATTERN',
         default=_my_CL_glob_pattern,
@@ -53,7 +53,7 @@ def parse_arguments():
         default=_my_output_default,
         help='output file (.po or .pot) with results')
 
-    return parser.parse_args()
+    return parser
 
 #-------------------------------------------------------------------------------
 #
@@ -125,10 +125,17 @@ def parse_tlog_files(globbed_files):
     return command_lines
 
 #-------------------------------------------------------------------------------
-def main(options):
+def main():
+    parser = get_my_arg_parser()
+    options = parser.parse_args()
+    search_dir = options.directory
+    if not os.path.exists(search_dir):
+        print(f'Input directory {search_dir} not found')
+        parser.print_help()
+        sys.exit(3)
+
     ret_val = 0
 
-    search_dir = options.directory
     glob_pattern = options.pattern
     tlogs = glob_pattern_files(search_dir, glob_pattern)
 
@@ -158,4 +165,4 @@ def main(options):
 #
 #-------------------------------------------------------------------------------
 if __name__ == '__main__':
-    sys.exit(main(parse_arguments()))
+    sys.exit(main())

@@ -47,7 +47,12 @@ def parse_arguments():
         default=_my_output_default,
         help='output file')
 
-    return parser.parse_args()
+    options = parser.parse_args()
+    if not os.path.exists(options.input):
+        print(f'Input file {options.input} not found')
+        parser.print_help()
+        sys.exit(3)
+    return options
 
 #-------------------------------------------------------------------------------
 def save_as_json(file_name, content):
