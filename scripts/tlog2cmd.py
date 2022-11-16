@@ -76,13 +76,6 @@ def eat_ws(cmd_line, curr_index, stop_index):
     return curr_index
 
 #-------------------------------------------------------------------------------
-def eat_until_ws(cmd_line, curr_index, stop_index):
-    curr_char = cmd_line[curr_index]
-    while not curr_char.isspace() and curr_index < stop_index:
-        curr_index += 1
-    return curr_index
-
-#-------------------------------------------------------------------------------
 def extract_from_pattern(cmd_line, pattern):
     extracts = []
     curr_index = 0
@@ -108,52 +101,6 @@ def extract_from_pattern(cmd_line, pattern):
     return extracts
 
 #-------------------------------------------------------------------------------
-def handle_defines(cmd_line):
-    defines = []
-    curr_index = 0
-    stop_index = len(cmd_line)
-    while curr_index < stop_index:
-        print(f'DEFINES {curr_index} : {stop_index}')
-        # find the start
-        curr_index = cmd_line.find(' /D', curr_index, stop_index)
-        print(f'  FIND {curr_index}')
-        if curr_index == -1:
-            break
-        curr_index += 3
-        curr_index = eat_ws(cmd_line, curr_index, stop_index)
-        end_index = cmd_line.find(' ', curr_index, stop_index)
-        if end_index == -1:
-            end_index = stop_index
-        the_define = cmd_line[curr_index:end_index]
-        defines.append(the_define)
-        print(f' {curr_index} : {end_index}')
-        print(f'{the_define =}')
-        curr_index = end_index
-    return defines
-
-#-------------------------------------------------------------------------------
-def handle_includes(cmd_line):
-    defines = []
-    curr_index = 0
-    stop_index = len(cmd_line)
-    while curr_index < stop_index:
-        print(f'INCLUDES {curr_index} : {stop_index}')
-        # find the start
-        curr_index = cmd_line.find(' /I', curr_index, stop_index)
-        if curr_index == -1:
-            break
-        curr_index += 3
-        curr_index = eat_ws(cmd_line, curr_index, stop_index)
-        end_index = cmd_line.find(' ', curr_index, stop_index)
-        if end_index == -1:
-            end_index = stop_index
-        the_include = cmd_line[curr_index:end_index]
-        defines.append(the_include)
-        print(f'{the_include =}')
-        curr_index = end_index
-    return defines
-
-#-------------------------------------------------------------------------------
 def extract_source_file(cmd_line):
     source_file_name = ""
     curr_index = 0
@@ -173,9 +120,11 @@ def process_line(cmd_line):
     content = {}
     defines = extract_from_pattern(cmd_line, ' /D')
     includes = extract_from_pattern(cmd_line, ' /I')
+    out_dir = extract_from_pattern(cmd_line, ' /Fo')
     source_file = extract_source_file(cmd_line)
     content['defines'] = defines
     content['includes'] = includes
+    content['out_dir'] = out_dir[0]
     commands[source_file] = content
     return commands
 
