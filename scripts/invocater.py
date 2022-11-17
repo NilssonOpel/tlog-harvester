@@ -81,6 +81,7 @@ def run_process(command, do_check, extra_dir=os.getcwd(), as_text=True):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 text=as_text,
+                                shell=True,
                                 encoding=encoding_used,  # See https://bugs.python.org/issue27179
                                 check=do_check)
         if status.returncode == 0:
