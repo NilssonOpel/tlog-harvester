@@ -20,7 +20,7 @@ Get commandlines from Visual Studio .tlog files
 """
 USAGE_EXAMPLE = f"""
 Examples:
-> {_my_name} -d build_dir -f Release
+> {_my_name} -d build_dir -f Release -o {_my_output_default}
 
 """
 
@@ -30,11 +30,6 @@ def get_my_arg_parser():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(DESCRIPTION),
         epilog=textwrap.dedent(USAGE_EXAMPLE))
-#    group = parser.add_mutually_exclusive_group()
-#    group.add_argument('-r', '--replace', action='store_true',
-#        help='replace all translations')
-#    group.add_argument('-f', '--fill', action='store_true',
-#        help='insert only the missing translations')
 
     add = parser.add_argument
     add('-q', '--quiet', action='store_true',
@@ -118,7 +113,7 @@ def parse_one_tlog_file(tlog_file):
 def parse_tlog_files(globbed_files):
     command_lines = {}
     for file in globbed_files:
-        print(f'{file = }')
+#        print(f'{file = }')
         tlog_output = parse_one_tlog_file(file)
         command_lines[file] = tlog_output
 
@@ -150,6 +145,7 @@ def main():
         print(f'No files left after filter on {options.filter}')
         return 1
 
+    no_tlog_dirs = len(tlogs)
     results = parse_tlog_files(tlogs)
     if not results:
         print(f'No logs found')
@@ -157,6 +153,7 @@ def main():
 
     result_file = options.output
     save_as_json(result_file, results)
+    print(f'{len(results)} directories processed of {no_tlog_dirs}')
     print(f'Results saved in {result_file}')
 
     return ret_val

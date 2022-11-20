@@ -15,11 +15,11 @@ _my_output_default = 'cmds.json'
 
 
 DESCRIPTION = """
-Make commandlines from tlogs.json input
+Extract sourcefile, defines, includes and output-directory from tlogs.json input
 """
 USAGE_EXAMPLE = f"""
 Examples:
-> {_my_name} -i tlog.json -o cmdlines.json
+> {_my_name} -i {_my_input_default} -o {_my_output_default}
 
 """
 
@@ -29,11 +29,6 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(DESCRIPTION),
         epilog=textwrap.dedent(USAGE_EXAMPLE))
-#    group = parser.add_mutually_exclusive_group()
-#    group.add_argument('-r', '--replace', action='store_true',
-#        help='replace all translations')
-#    group.add_argument('-f', '--fill', action='store_true',
-#        help='insert only the missing translations')
 
     add = parser.add_argument
     add('-q', '--quiet', action='store_true',
@@ -101,6 +96,12 @@ def extract_from_pattern(cmd_line, pattern):
     return extracts
 
 #-------------------------------------------------------------------------------
+def extract_output_dir(cmd_line):
+    output_dir_list = extract_from_pattern(cmd_line, ' /Fo')
+    output_dir = output_dir_list[0]
+    return output_dir
+
+#-------------------------------------------------------------------------------
 def extract_source_file(cmd_line):
     source_file_name = ""
     curr_index = 0
@@ -108,23 +109,41 @@ def extract_source_file(cmd_line):
     # First skip the \n" ending
     end_index = cmd_line.rfind('\n"', 0, stop_index)
     start_index = cmd_line.rfind(' ', 0, end_index)
-
     source_file_name = cmd_line[start_index:end_index]
-    print(f'{source_file_name =}')
 
     return source_file_name
+
+#-------------------------------------------------------------------------------
+def normalize_path(tlog_path):
+    tlog_path = tlog_path.strip()
+    quoted = False
+    if tlog_path[0] == '"':
+        quoted = True
+        tlog_path = tlog_path[1:-1]
+    canonical_path = os.path.realpath(tlog_path)
+    if quoted:
+        canonical_path = '"' + canonical_path + '"'
+    return canonical_path
+
+#-------------------------------------------------------------------------------
+def normalize_path_list(tlog_path_list):
+    canonical_path_list = []
+    for tlog_path in tlog_path_list:
+        canonical_path = normalize_path(tlog_path)
+        canonical_path_list.append(canonical_path)
+    return canonical_path_list
 
 #-------------------------------------------------------------------------------
 def process_line(cmd_line):
     commands = {}
     content = {}
     defines = extract_from_pattern(cmd_line, ' /D')
-    includes = extract_from_pattern(cmd_line, ' /I')
-    out_dir = extract_from_pattern(cmd_line, ' /Fo')
-    source_file = extract_source_file(cmd_line)
+    includes = normalize_path_list(extract_from_pattern(cmd_line, ' /I'))
+    out_dir = normalize_path(extract_output_dir(cmd_line))
+    source_file = normalize_path(extract_source_file(cmd_line))
     content['defines'] = defines
     content['includes'] = includes
-    content['out_dir'] = out_dir[0]
+    content['out_dir'] = out_dir
     commands[source_file] = content
     return commands
 
@@ -133,10 +152,8 @@ def process_tlogs(json_file):
     content = open_as_json(json_file)
     command_lines = []
     for tlog_dir in content.keys():
-        print(f'{tlog_dir = }')
         cmd_list = content[tlog_dir]
         for cmd_line in cmd_list:
-            print(f'{cmd_line = }')
             results = process_line(cmd_line)
             command_lines.append(results)
 
@@ -155,6 +172,7 @@ def main(options):
 
     result_file = options.output
     save_as_json(result_file, results)
+    print(f'{len(results)} command lines')
     print(f'Results saved in {result_file}')
 
     return ret_val
