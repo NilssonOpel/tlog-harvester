@@ -14,7 +14,7 @@ _my_input_default = 'cmds.json'
 _my_output_default = 'build.ninja'
 _my_exe_default = 'D:/wrk/clangberget/scripts/t7.py'
 
-DESCRIPTION = """
+DESCRIPTION = f"""
 Make ninja file from {_my_input_default} input
 """
 USAGE_EXAMPLE = f"""
@@ -94,9 +94,8 @@ def generate_ninja_file(json_input, compiler_tool, ninja_file, options):
     f = open(ninja_file, "w")
     f.write("ninja_required_version=1.3\n\n")
     f.write("rule COMPILE\n")
-    f.write("  command = $CMDLINE\n")
-    # Make a deps file from Macro_Invocation
     f.write("  depfile = $out.d\n")
+    f.write("  deps = gcc\n")
     f.write("  command = $CMDLINE --dependency $out.d\n\n")
 
     for invocation in json_input:
