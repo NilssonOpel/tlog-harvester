@@ -98,8 +98,13 @@ def generate_ninja_file(json_input, compiler_tool, ninja_file, options):
     f.write("  deps = gcc\n")
     f.write("  command = $CMDLINE --dependency $out.d\n\n")
 
+    outputs_generated = {}
+
     for invocation in json_input:
         for src_file in invocation.keys():
+            if src_file == 'null':
+                print(f'The source file cannot be null idiot!')
+                continue
             out_file = os.path.basename(src_file) + '.indx'
             argument_line = f'{compiler_tool} --source_file {src_file}'
             args = invocation[src_file]
@@ -114,6 +119,12 @@ def generate_ninja_file(json_input, compiler_tool, ninja_file, options):
                 out_file = os.path.join(out_dir, out_file)
             argument_line += f' --output_file {out_file}'
 
+            if out_file in outputs_generated:
+                print(f'{out_file} already has rule from {outputs_generated[out_file]}')
+                print(f'  and now gets one from {invocation[src_file]}')
+                continue  # Skip this one
+            else:
+                outputs_generated[out_file] = invocation[src_file]
             out_file = ninja_escape(out_file)
             src_file = ninja_escape(src_file)
             f.write("build " + out_file + ": COMPILE " + src_file + "\n")

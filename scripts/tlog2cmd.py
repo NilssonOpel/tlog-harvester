@@ -114,13 +114,19 @@ def extract_source_file(cmd_line):
     return source_file_name
 
 #-------------------------------------------------------------------------------
-def normalize_path(tlog_path):
+def normalize_path(tlog_path, allow_non_existing=False):
     tlog_path = tlog_path.strip()
     quoted = False
     if tlog_path[0] == '"':
         quoted = True
         tlog_path = tlog_path[1:-1]
     canonical_path = os.path.realpath(tlog_path)
+    if not os.path.exists(canonical_path):
+        print(f'Fishy: {canonical_path} mentioned but do not exist')
+        if allow_non_existing:
+            canonical_path = tlog_path
+        else:
+            return None
     if quoted:
         canonical_path = '"' + canonical_path + '"'
     return canonical_path
@@ -130,7 +136,8 @@ def normalize_path_list(tlog_path_list):
     canonical_path_list = []
     for tlog_path in tlog_path_list:
         canonical_path = normalize_path(tlog_path)
-        canonical_path_list.append(canonical_path)
+        if canonical_path:
+            canonical_path_list.append(canonical_path)
     return canonical_path_list
 
 #-------------------------------------------------------------------------------
@@ -139,7 +146,7 @@ def process_line(cmd_line):
     content = {}
     defines = extract_from_pattern(cmd_line, ' /D')
     includes = normalize_path_list(extract_from_pattern(cmd_line, ' /I'))
-    out_dir = normalize_path(extract_output_dir(cmd_line))
+    out_dir = normalize_path(extract_output_dir(cmd_line), allow_non_existing=True)
     source_file = normalize_path(extract_source_file(cmd_line))
     content['defines'] = defines
     content['includes'] = includes
