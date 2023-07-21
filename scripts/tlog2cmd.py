@@ -122,7 +122,7 @@ def normalize_path(tlog_path, allow_non_existing=False):
         tlog_path = tlog_path[1:-1]
     canonical_path = os.path.realpath(tlog_path)
     if not os.path.exists(canonical_path):
-        print(f'Fishy: {canonical_path} mentioned but do not exist')
+        # print(f'Fishy: {canonical_path} mentioned but do not exist')
         if allow_non_existing:
             canonical_path = tlog_path
         else:
@@ -141,17 +141,39 @@ def normalize_path_list(tlog_path_list):
     return canonical_path_list
 
 #-------------------------------------------------------------------------------
-def process_line(cmd_line):
+def handle_source_file(cmd_line, tlog_dir):
+    raw_source_file = extract_source_file(cmd_line)
+    if len(raw_source_file) == 0:
+        print(f'Could not find the source file in this line:')
+        print(f'{cmd_line}')
+        print(f'  (coming from {tlog_dir})')
+        return None
+    source_file = normalize_path(raw_source_file)
+    if source_file:
+        return source_file
+
+    # OK, step back and see if raw_source_file makes sense
+    source_file = raw_source_file
+    if not os.path.exists(source_file):
+        print(f'Fishy: {source_file = } do not exist')
+        return None
+    return source_file
+
+
+#-------------------------------------------------------------------------------
+def process_line(cmd_line, tlog_dir):
     commands = {}
     content = {}
     defines = extract_from_pattern(cmd_line, ' /D')
     includes = normalize_path_list(extract_from_pattern(cmd_line, ' /I'))
     out_dir = normalize_path(extract_output_dir(cmd_line), allow_non_existing=True)
-    source_file = normalize_path(extract_source_file(cmd_line))
-    content['defines'] = defines
-    content['includes'] = includes
-    content['out_dir'] = out_dir
-    commands[source_file] = content
+    source_file = handle_source_file(cmd_line, tlog_dir)
+    if source_file:
+        content['defines'] = defines
+        content['includes'] = includes
+        content['out_dir'] = out_dir
+        commands[source_file] = content
+
     return commands
 
 #-------------------------------------------------------------------------------
@@ -161,7 +183,7 @@ def process_tlogs(json_file):
     for tlog_dir in content.keys():
         cmd_list = content[tlog_dir]
         for cmd_line in cmd_list:
-            results = process_line(cmd_line)
+            results = process_line(cmd_line, tlog_dir)
             command_lines.append(results)
 
     return command_lines
